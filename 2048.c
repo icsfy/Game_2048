@@ -19,7 +19,7 @@ int main(int argc, char const *argv[])
             num = LINES / HEIGHT;   /* limit not to draw out screen */
     }
 
-    start_game();
+    start_game(load_last_game());
 
     endwin();
     return 0;
@@ -36,17 +36,24 @@ void init_game()
     keypad(stdscr, TRUE);
 }
 
-void start_game()
+void game_board_init()
 {
-    int ch, moved = 0;
-    is_gameover = 0;
-    current_score = 0;
-
     game_board = (int **) malloc(num * sizeof(int *));
     for (int i = 0; i < num; ++i)
         game_board[i] = (int *) calloc(num, sizeof(int));
+}
 
-    generate_num(2);
+void start_game(int load_game)
+{
+    int ch, moved = 0;
+    is_gameover = 0;
+
+    if (!load_game) {
+        current_score = 0;
+        game_board_init();
+        generate_num(2);
+    }
+
     refresh_game();
 
     while ((ch = getch()) != GAME_KEY_EXIT) {
@@ -84,12 +91,14 @@ void start_game()
     }
 
 FREE_RESOURCE:
+    if (!is_gameover && ch == GAME_KEY_EXIT)
+        save_current_game();
     for (int i = 0; i < num; ++i)
         free(game_board[i]);
     free(game_board);
     save_scores();
     if (ch == GAME_KEY_RESTART)
-        start_game();
+        start_game(0);
 }
 
 /* Draw grid border  */
@@ -333,4 +342,36 @@ void update_top_score()
         }
         top_score[pos] = current_score;
     }
+}
+
+/* Save current game when we quit and game is not over */
+void save_current_game()
+{
+    FILE *f = fopen(GAME_RECORD_FILE, "wb");
+    if (f) {
+        fwrite(&current_score, sizeof(int), 1, f);
+        fwrite(&num, sizeof(int), 1, f);
+        for (int i = 0; i < num; ++i)
+            for (int j = 0; j < num; ++j)
+                fwrite(&game_board[i][j], sizeof(int), 1, f);
+        fclose(f);
+    }
+}
+
+/* Load last game when we have record file */
+int load_last_game()
+{
+    FILE *f = fopen(GAME_RECORD_FILE, "rb");
+    if (f) {
+        fread(&current_score, sizeof(int), 1, f);
+        fread(&num, sizeof(int), 1, f);
+        game_board_init();
+        for (int i = 0; i < num; ++i)
+            for (int j = 0; j < num; ++j)
+                fread(&game_board[i][j], sizeof(int), 1, f);
+        fclose(f);
+        remove(GAME_RECORD_FILE);
+        return 1;
+    }
+    return 0;
 }

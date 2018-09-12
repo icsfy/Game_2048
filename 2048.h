@@ -31,8 +31,9 @@
 #define GAME_TEXT_RESTART   " 'r': Restart"
 #define GAME_TEXT_EXIT      " 'q': Quit"
 
-#define GAME_SCORE_FILE     "game_2048_records.dat"
+#define GAME_SCORE_FILE     "game_2048_scores.dat"
 #define GAME_SCORE_COUNT    5
+#define GAME_RECORD_FILE    "game_2048_last_record.dat"
 
 void board(WINDOW *win, int starty, int startx, int lines, int cols,
            int tile_width, int tile_height);
@@ -45,6 +46,8 @@ void load_scores();
 void save_scores();
 void update_top_score();
 void init_game();
-void start_game();
+void start_game(int load_game);
+void save_current_game();
+int load_last_game();
 
 #endif /* __GAME_2048__ */
